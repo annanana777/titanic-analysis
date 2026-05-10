@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Data Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 5px 0 0 0;
+            color: #bdc3c7;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .upload-box {
+            background: white;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-box h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .upload-box p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .browse-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        .browse-btn:hover {
+            background-color: #2980b9;
+        }
+
+        #analyzeBtn {
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        #analyzeBtn:hover {
+            background-color: #229954;
+        }
+
+        #analyzeBtn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        #fileInfo {
+            margin-top: 10px;
+            color: #27ae60;
+            font-weight: bold;
+            display: none;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #ddd;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #errorBox {
+            background-color: #fadbd8;
+            border: 1px solid #e74c3c;
+            color: #c0392b;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        #results {
+            display: none;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        .stat-cards {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 150px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .stat-card.green .number { color: #27ae60; }
+        .stat-card.red .number   { color: #e74c3c; }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #eaf4fd;
+        }
+
+        .yes { color: #27ae60; font-weight: bold; }
+        .no  { color: #e74c3c; font-weight: bold; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-box {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        #insightsText {
+            background-color: #eaf4fd;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
+        #backBtn {
+            background-color: #95a5a6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        #backBtn:hover {
+            background-color: #7f8c8d;
+        }
+
+        @media (max-width: 700px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🚢 Titanic Survival Analysis</h1>
+        <p>Upload the titanic.csv file to see charts, statistics and AI insights</p>
+    </div>
+
+    <div class="upload-box" id="uploadArea">
+        <h2>Upload Your Dataset</h2>
+        <p>Supports CSV and Excel files (max 50 MB)</p>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+        <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
+            📂 Browse File
+        </button>
+        <div id="fileInfo">✅ File selected: <span id="fileName"></span></div>
+        <br>
+        <button id="analyzeBtn" onclick="runAnalysis()">🔍 Analyze Dataset</button>
+    </div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Analyzing data and generating charts... please wait</p>
+    </div>
+
+    <div id="errorBox"></div>
+
+    <div id="results">
+        <button id="backBtn" onclick="goBack()">← Upload Another File</button>
+        <div class="stat-cards" id="statCards"></div>
+        <div class="section">
+            <h2>📋 Data Preview (first 20 rows)</h2>
+            <div class="table-container" id="previewTable"></div>
+        </div>
+        <div class="section">
+            <h2>📊 Charts and Visualizations</h2>
+            <div class="charts-grid" id="chartsGrid"></div>
+        </div>
+        <div class="section">
+            <h2>🤖 AI Generated Insights</h2>
+            <div id="insightsText"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    var BACKEND = "http://localhost:8000";
+    var selectedFile = null;
+
+    document.getElementById("fileInput").addEventListener("change", function() {
+        var file = this.files[0];
+        if (!file) return;
+
+        var name = file.name.toLowerCase();
+        if (!name.endsWith(".csv") && !name.endsWith(".xlsx") && !name.endsWith(".xls")) {
+            showError("Please select a CSV or Excel file");
+            return;
+        }
+
+        selectedFile = file;
+        document.getElementById("fileName").textContent = file.name;
+        document.getElementById("fileInfo").style.display = "block";
+        document.getElementById("analyzeBtn").style.display = "inline-block";
+        hideError();
+    });
+
+    async function runAnalysis() {
+        if (!selectedFile) return;
+
+        document.getElementById("analyzeBtn").disabled = true;
+        document.getElementById("uploadArea").style.display = "none";
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("results").style.display = "none";
+        hideError();
+
+        try {
+            var formData = new FormData();
+            formData.append("file", selectedFile);
+
+            var response = await fetch(BACKEND + "/analyze", {
+                method: "POST",
+                body: formData
+            });
+
+            var data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Server error");
+            }
+
+            showResults(data);
+
+        } catch (err) {
+            document.getElementById("uploadArea").style.display = "block";
+            showError("Error: " + err.message);
+        } finally {
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("analyzeBtn").disabled = false;
+        }
+    }
+
+    function showResults(data) {
+        var info = data.dataset_info;
+
+        var cards = document.getElementById("statCards");
+        cards.innerHTML =
+            '<div class="stat-card">' +
+                '<div class="number">' + info.rows + '</div>' +
+                '<div class="label">Total Passengers</div>' +
+            '</div>' +
+            '<div class="stat-card green">' +
+                '<div class="number">' + info.survival_rate + '%</div>' +
+                '<div class="label">Survived</div>' +
+            '</div>' +
+            '<div class="stat-card red">' +
+                '<div class="number">' + (100 - info.survival_rate).toFixed(1) + '%</div>' +
+                '<div class="label">Did Not Survive</div>' +
+            '</div>' +
+            '<div class="stat-card">' +
+                '<div class="number">' + info.columns + '</div>' +
+                '<div class="label">Columns (with new ones)</div>' +
+            '</div>';
+
+        buildTable(data.preview, info.column_names);
+        buildCharts(data.charts);
+        document.getElementById("insightsText").textContent = data.insights;
+        document.getElementById("results").style.display = "block";
+        document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function buildTable(rows, columns) {
+        if (!rows || rows.length === 0) {
+            document.getElementById("previewTable").innerHTML = "<p>No data to show</p>";
+            return;
+        }
+
+        var html = "<table><thead><tr>";
+        for (var i = 0; i < columns.length; i++) {
+            html += "<th>" + columns[i] + "</th>";
+        }
+        html += "</tr></thead><tbody>";
+
+        for (var r = 0; r < rows.length; r++) {
+            html += "<tr>";
+            for (var c = 0; c < columns.length; c++) {
+                var col = columns[c];
+                var val = rows[r][col] || "";
+                if (col === "Survived") {
+                    if (val === "1") {
+                        html += '<td class="yes">✓ Yes</td>';
+                    } else {
+                        html += '<td class="no">✗ No</td>';
+                    }
+                } else {
+                    html += "<td>" + val + "</td>";
+                }
+            }
+            html += "</tr>";
+        }
+
+        html += "</tbody></table>";
+        document.getElementById("previewTable").innerHTML = html;
+    }
+
+    function buildCharts(charts) {
+        var container = document.getElementById("chartsGrid");
+        container.innerHTML = "";
+
+        if (!charts || charts.length === 0) {
+            container.innerHTML = "<p>No charts to show</p>";
+            return;
+        }
+
+        for (var i = 0; i < charts.length; i++) {
+            var box = document.createElement("div");
+            box.className = "chart-box";
+
+            var titleDiv = document.createElement("div");
+            titleDiv.className = "chart-title";
+            titleDiv.textContent = charts[i].title;
+            box.appendChild(titleDiv);
+
+            var plotDiv = document.createElement("div");
+            plotDiv.id = "chart" + i;
+            box.appendChild(plotDiv);
+            container.appendChild(box);
+
+            try {
+                var figData = JSON.parse(charts[i].plotly_json);
+                figData.layout = figData.layout || {};
+                figData.layout.height = 300;
+                figData.layout.margin = { t: 20, r: 10, b: 40, l: 50 };
+                figData.layout.paper_bgcolor = "white";
+                figData.layout.plot_bgcolor = "white";
+
+                Plotly.newPlot("chart" + i, figData.data, figData.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+            } catch (e) {
+                plotDiv.textContent = "Could not render chart";
+            }
+        }
+    }
+
+    function goBack() {
+        selectedFile = null;
+        document.getElementById("fileInput").value = "";
+        document.getElementById("fileInfo").style.display = "none";
+        document.getElementById("analyzeBtn").style.display = "none";
+        document.getElementById("results").style.display = "none";
+        document.getElementById("uploadArea").style.display = "block";
+        hideError();
+        window.scrollTo(0, 0);
+    }
+
+    function showError(msg) {
+        var box = document.getElementById("errorBox");
+        box.textContent = "⚠️ " + msg;
+        box.style.display = "block";
+    }
+
+    function hideError() {
+        document.getElementById("errorBox").style.display = "none";
+    }
+</script>
+
+</body>
+</html>
